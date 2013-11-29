@@ -181,6 +181,9 @@ formatloop:
 			case 'x':
 				base = 16;
 				break;
+			case 'b':
+				base = 2;
+				break;
 			case 'd':
 			case 'i':
 				flags |= PF_SIGNED;

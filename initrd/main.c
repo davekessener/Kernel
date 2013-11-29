@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
 		FILE *f = fopen(h->name, "rb");
 		j = h->length;
 		
-		*rd.symtable.offsets[i] = l;
+		*((uint32_t *) rd.symtable.offsets[i]) = l;
 
 		while(j >= BUF_SIZE)
 		{

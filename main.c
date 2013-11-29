@@ -51,8 +51,8 @@ void printfs(void)
 
 	while((node = readdir_fs(fs_root, i)) != NULL)
 	{
-		vga_printf("Found file '%s' ", node->name);
 		fs_node_t *fsnode = finddir_fs(fs_root, node->name);
+		vga_printf("Found file '%s' ", fsnode->name);
 
 		if(fsnode->flags & FS_F_DIRECTORY)
 		{
@@ -61,8 +61,9 @@ void printfs(void)
 		else
 		{
 			char buf[1024];
-			buf[read_fs(fsnode, 0, 1024, (uint8_t *) buf)] = '\0';
-			vga_printf("(file):\n\t%s\n", buf);
+			uint32_t l = read_fs(fsnode, 0, 1024, (uint8_t *) buf);
+			buf[l] = '\0';
+			vga_printf("(file):\n\t\"%s\"\n", l > 0 ? buf : "<EMPTY>");
 		}
 
 		i++;

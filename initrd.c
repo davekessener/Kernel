@@ -10,19 +10,19 @@ dirent_t dirent;
 
 static uint32_t initrd_read(fs_node_t *node, uint32_t offset, uint32_t size, uint8_t *buffer)
 {
-	initrd_header_t header = initrd_headers[node->inode];
+	initrd_header_t *header = &initrd_headers[node->inode];
 
-	if(offset > header.length)
+	if(offset > header->length)
 	{
 		return 0;
 	}
 
-	if(offset + size > header.length)
+	if(offset + size > header->length)
 	{
-		size = header.length - offset;
+		size = header->length - offset;
 	}
 
-	memmove(buffer, (uint8_t *) (header.offset + offset), size);
+	memmove(buffer, (uint8_t *) (header->offset + offset), size);
 
 	return size;
 }

@@ -52,21 +52,18 @@ char *strdup(const char *str)
 
 int strcmp(const char *str1, const char *str2)
 {
-	const char *c = str1;
+	size_t i = 1;
+
 	if(!str1 || !str2) return -1;
+	if(*str1 != *str2) return 1;
 
-	do
+	while(*str1 && *str2)
 	{
-		if(!*str1 || !*str2)
-		{
-			break;
-		}
-	} while(*str1++ == *str2++);
-	--str1;
-	--str2;
+		if(*++str1 != *++str2) break;
+		i++;
+	}
 
-	if(*str1 == *str2 && str1[1] == '\0' && str1[1] == str2[1]) return 0;
-
-	return str1 - c;
+	if(*str1 == *str2) return 0;
+	else return i + 1;
 }
 
