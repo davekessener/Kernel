@@ -21,8 +21,13 @@ ISO=$(OSNAME).iso
 
 all: $(ISO)
 
+debug: clean
+	make MACROS=-DDEBUG all
+
 $(ISO): $(TARGET)
 	cp $(TARGET) isodir/boot/
+	cd initrd; export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games; make build
+	mv initrd/initrd.img isodir/boot/
 	grub-mkrescue -o ../shared/$(ISO) isodir/
 
 $(TARGET): boot.o $(OBJS)

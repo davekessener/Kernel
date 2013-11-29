@@ -3,6 +3,7 @@ global _start
 _start:
 	mov esp,_sys_stack
 extern main
+	push ebx
 	call main
 	jmp $
 

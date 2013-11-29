@@ -103,9 +103,7 @@ void paging_pageFaultHandler(sys_regs_t *r)
 	if(us)      vga_puts("user_mode ");
 	if(res)     vga_puts("reserved ");
 	if(id)      vga_puts("ins-fetch ");
-	vga_puts(" \") at 0x");
-	vga_puts_hex(fault_addr);
-	vga_putch('\n');
+	vga_printf("\") @0x%08x\n", fault_addr);
 
 	PANIC("Page fault");
 }

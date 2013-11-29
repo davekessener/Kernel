@@ -113,6 +113,29 @@ void vga_puts_num(uint32_t v, uint32_t base)
 void vga_puts_dec(uint32_t v) { vga_puts_num(v, 10); }
 void vga_puts_hex(uint32_t v) { vga_puts_num(v, 16); }
 
+void vga_printf(const char *str, ...)
+{
+	va_list params;
+	char buf[VGA_WIDTH * VGA_HEIGHT];
+
+	va_start(params, str);
+	vsnprintf(buf, sizeof(buf) - 1, str, params);
+	va_end(params);
+
+	buf[sizeof(buf) - 1] = '\0';
+	vga_puts(buf);
+}
+
+void vga_vprintf(const char *str, va_list params)
+{
+	char buf[VGA_WIDTH * VGA_HEIGHT];
+
+	vsnprintf(buf, sizeof(buf) - 1, str, params);
+
+	buf[sizeof(buf) - 1] = '\0';
+	vga_puts(buf);
+}
+
 void vga_setTextColor(int8_t fc, uint8_t bc)
 {
 	vga_stdcolor = ((bc & 0x0f) << 4) | (fc & 0x0f);
