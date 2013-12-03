@@ -16,22 +16,34 @@ void *kmalloc_int(uint32_t sz, int align, uint32_t *phys)
 {
 	uint32_t tmp;
 
-	if(align == 1 && (heap_ptr & 0x0fff))
+	if(kheap)
 	{
-		heap_ptr &= 0xfffff000;
-		heap_ptr += 0x00001000;
+		tmp = (uint32_t) alloc(sz, (uint8_t) align, kheap);
+		if(phys)
+		{
+			page_t *page = paging_getPage(tmp, 0, kernel_dir);
+			*phys = page->frame * 0x1000 + (tmp & 0xfff);
+		}
 	}
-
-	tmp = heap_ptr;
-	heap_ptr += sz;
-
-	if(phys)
+	else
 	{
-		*phys = tmp;
+		if(align == 1 && (heap_ptr & 0x0fff))
+		{
+			heap_ptr &= 0xfffff000;
+			heap_ptr += 0x00001000;
+		}
+
+		tmp = heap_ptr;
+		heap_ptr += sz;
+
+		if(phys)
+		{
+			*phys = tmp;
+		}
 	}
 
 #ifdef DEBUG
-	vga_printf("static  kmalloc @0x%08x over % 5d(0x%04x) bytes.\n", tmp, sz, sz);
+	vga_printf("%s kmalloc @0x%08x over % 5d(0x%04x) bytes.\n", kheap ? "dynamic" : "static ", tmp, sz, sz);
 #endif
 
 	return (void *) tmp;
@@ -54,16 +66,7 @@ void *kmalloc_ap(uint32_t sz, uint32_t *phys)
 
 void *kmalloc(uint32_t sz)
 {
-	void *tmp = kheap ? alloc(sz, 0, kheap) : kmalloc_int(sz, 0, NULL);
-
-#ifdef DEBUG
-	if(kheap)
-	{
-		vga_printf("dynamic kmalloc @0x%08x over % 5d(0x%04x) bytes.\n", (uint32_t)tmp, sz, sz);
-	}
-#endif
-
-	return tmp;
+	return kmalloc_int(sz, 0, NULL);
 }
 
 void kfree(void *p)
