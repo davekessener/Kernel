@@ -34,9 +34,13 @@ extern page_dir_t *kernel_dir;
 void paging_init();
 void paging_switchPageDir(page_dir_t *);
 page_t *paging_getPage(uint32_t, int, page_dir_t *);
+page_table_t *paging_cloneTable(page_table_t *, uint32_t *);
+page_dir_t *paging_cloneDirectory(page_dir_t *);
 void free_frame(page_t *);
 void allocate_frame(page_t *, int, int);
 void paging_pageFaultHandler(sys_regs_t *);
+
+extern void copy_page_physical(uint32_t, uint32_t);
 
 #endif
 

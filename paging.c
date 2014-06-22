@@ -10,7 +10,6 @@ extern volatile uint32_t heap_ptr;
 #define IND(v) ((v)>>5)
 #define OFF(v) ((v)&0x1f)
 
-void allocate_frame(page_t *, int, int);
 void set_frame(uint32_t);
 void reset_frame(uint32_t);
 int test_frame(uint32_t);
@@ -27,7 +26,7 @@ void paging_init(void)
 
 	kernel_dir = kmalloc_a(sizeof(page_dir_t));
 	memset(kernel_dir, 0, sizeof(page_dir_t));
-	current_dir = kernel_dir;
+	kernel_dir->physicalAddr = (uint32_t) kernel_dir->tPhysical;
 
 	heap_t *tmp_heap = kmalloc(sizeof(heap_t));
 
@@ -47,16 +46,18 @@ void paging_init(void)
 	}
 
 	isrs_installInterruptHandler(14, paging_pageFaultHandler);
-	paging_switchPageDir(kernel_dir);
 	
 	kheap = create_heap_at(tmp_heap, KHEAP_START, KHEAP_START + KHEAP_INITIAL_SIZE, 0xcffff000, 0, 0);
+
+	current_dir = paging_cloneDirectory(kernel_dir);
+	paging_switchPageDir(current_dir);
 }
 
 void paging_switchPageDir(page_dir_t *new)
 {
 	uint32_t cr0;
 	current_dir = new;
-    __asm__ __volatile__("mov %0, %%cr3":: "r"(&new->tPhysical));
+    __asm__ __volatile__("mov %0, %%cr3":: "r"(new->physicalAddr));
 	__asm__ __volatile__("mov %%cr0, %0": "=r"(cr0));
 	cr0 |= 0x80000000; // Enable paging!
 	__asm__ __volatile__("mov %0, %%cr0":: "r"(cr0));
@@ -84,6 +85,70 @@ page_t *paging_getPage(uint32_t addr, int create, page_dir_t *dir)
 	{
 		return NULL;
 	}
+}
+
+page_table_t *paging_cloneTable(page_table_t *src, uint32_t *physAddr)
+{
+	page_table_t *table = kmalloc_ap(sizeof(page_table_t), physAddr);
+
+	memset(table, 0, sizeof(page_table_t));
+
+	int i;
+	for(i = 0 ; i < 1024 ; i++)
+	{
+		if(!src->pages[i].frame)
+		{
+			continue;
+		}
+
+		allocate_frame(&table->pages[i], 0, 0);
+
+		if(src->pages[i].present) 	table->pages[i].present = 1;
+		if(src->pages[i].rw) 		table->pages[i].rw = 1;
+		if(src->pages[i].user) 		table->pages[i].user = 1;
+		if(src->pages[i].accessed)	table->pages[i].accessed = 1;
+		if(src->pages[i].dirty)		table->pages[i].dirty = 1;
+
+		copy_page_physical(src->pages[i].frame * 0x1000, table->pages[i].frame * 0x1000);
+	}
+
+	return table;
+}
+
+page_dir_t *paging_cloneDirectory(page_dir_t *src)
+{
+	uint32_t phys;
+
+	page_dir_t *dir = kmalloc_ap(sizeof(page_dir_t), &phys);
+
+	memset(dir, 0, sizeof(page_dir_t));
+
+	uint32_t offset = (uint32_t) dir->tPhysical - (uint32_t) dir;
+
+	dir->physicalAddr = phys + offset;
+
+	int i;
+	for(i = 0 ; i < 1024 ; i++)
+	{
+		if(!src->tables[i])
+		{
+			continue;
+		}
+
+		if(kernel_dir->tables[i] == src->tables[i])
+		{
+			dir->tables[i] = src->tables[i];
+			dir->tPhysical[i] = src->tPhysical[i];
+		}
+		else
+		{
+			uint32_t phys;
+			dir->tables[i] = paging_cloneTable(src->tables[i], &phys);
+			dir->tPhysical[i] = phys | 0x07;
+		}
+	}
+
+	return dir;
 }
 
 void paging_pageFaultHandler(sys_regs_t *r)
